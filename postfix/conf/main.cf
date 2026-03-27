@@ -1,0 +1,156 @@
+# --------------------------------------------------------------------------
+# Please create a file "extra.cf" for persistent overrides to main.cf
+# --------------------------------------------------------------------------
+
+###############
+# Basic Settings
+###############
+biff = no
+append_dot_mydomain = no
+inet_interfaces = all
+inet_protocols = all
+recipient_delimiter = +
+compatibility_level = 3.7
+smtputf8_enable = no
+
+# Alias maps are auto-generated in postfix.sh on startup
+alias_maps = hash:/etc/aliases
+alias_database = hash:/etc/aliases
+
+###############
+# Network & Relay
+###############
+relayhost =
+mynetworks_style = subnet
+mydestination = localhost.localdomain, localhost
+
+# Relay domains — populated from RELAY_DOMAINS env var via postfix.sh
+relay_domains = hash:/opt/postfix/conf/relay_domains
+
+# Relay transport — set via RELAY_HOST env var in postfix.sh
+relay_transport = smtp:
+
+###############
+# Size & Queue Limits
+###############
+mailbox_size_limit = 0
+message_size_limit = 104857600
+bounce_queue_lifetime = 1d
+maximal_queue_lifetime = 5d
+maximal_backoff_time = 1800s
+minimal_backoff_time = 300s
+queue_run_delay = 300s
+delay_warning_time = 4h
+
+###############
+# TLS Configuration
+###############
+
+# Certificate files
+smtpd_tls_cert_file = /etc/letsencrypt/live/fullchain.pem
+smtpd_tls_key_file = /etc/letsencrypt/live/privkey.pem
+smtp_tls_cert_file = /etc/letsencrypt/live/fullchain.pem
+smtp_tls_key_file = /etc/letsencrypt/live/privkey.pem
+smtpd_tls_dh1024_param_file = /etc/letsencrypt/dhparams.pem
+
+# SNI support
+tls_server_sni_maps = hash:/opt/postfix/conf/sni.map
+
+# TLS protocols and ciphers
+smtp_tls_protocols = >=TLSv1.2
+lmtp_tls_protocols = >=TLSv1.2
+smtpd_tls_protocols = >=TLSv1.2
+smtp_tls_mandatory_protocols = >=TLSv1.2
+lmtp_tls_mandatory_protocols = >=TLSv1.2
+smtpd_tls_mandatory_protocols = >=TLSv1.2
+submission_smtpd_tls_mandatory_protocols = >=TLSv1.2
+
+# TLS security settings
+smtpd_tls_mandatory_ciphers = high
+smtpd_tls_security_level = may
+smtpd_tls_auth_only = yes
+smtpd_tls_eecdh_grade = auto
+tls_preempt_cipherlist = yes
+tls_ssl_options = NO_COMPRESSION, NO_RENEGOTIATION
+
+# Outbound TLS
+smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
+smtp_tls_security_level = dane
+smtp_dns_support_level = dnssec
+
+# TLS logging
+smtp_tls_loglevel = 1
+smtpd_tls_loglevel = 1
+smtpd_tls_received_header = yes
+smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
+
+###############
+# Postscreen
+###############
+postscreen_bare_newline_enable = no
+postscreen_greet_action = enforce
+postscreen_greet_banner = $smtpd_banner
+postscreen_greet_wait = 3s
+postscreen_greet_ttl = 2d
+postscreen_pipelining_enable = no
+postscreen_non_smtp_command_enable = no
+postscreen_blacklist_action = drop
+postscreen_cache_map = proxy:btree:$data_directory/postscreen_cache
+postscreen_cache_cleanup_interval = 24h
+
+# Postscreen access control
+postscreen_access_list = permit_mynetworks,
+  cidr:/opt/postfix/conf/custom_postscreen_whitelist.cidr,
+  cidr:/opt/postfix/conf/postscreen_access.cidr
+
+# DNSBL configuration
+postscreen_dnsbl_action = enforce
+postscreen_dnsbl_threshold = 3
+postscreen_dnsbl_ttl = 5m
+postscreen_dnsbl_sites =
+  list.dnswl.org=127.0.[0..255].[0..3]*-2
+  zen.spamhaus.org=127.0.0.[2;3]*3
+  zen.spamhaus.org=127.0.0.[4..7]*6
+  zen.spamhaus.org=127.0.0.[10;11]*8
+  bl.spamcop.net*2
+  bl.mailspike.net=127.0.0.2*4
+
+# Disable certain EHLO keywords
+postscreen_discard_ehlo_keywords = chunking, silent-discard, smtputf8, dsn
+smtpd_discard_ehlo_keywords = chunking, silent-discard, smtputf8
+
+###############
+# SMTP Restrictions
+###############
+smtpd_delay_reject = yes
+smtpd_helo_required = yes
+disable_vrfy_command = yes
+smtpd_forbid_bare_newline = yes
+plaintext_reject_code = 550
+
+# Relay restrictions
+smtpd_relay_restrictions = permit_mynetworks,
+  permit_sasl_authenticated,
+  defer_unauth_destination
+
+# Recipient restrictions
+smtpd_recipient_restrictions =
+  permit_mynetworks,
+  reject_invalid_helo_hostname,
+  reject_unauth_destination
+
+# Data restrictions
+smtpd_data_restrictions = reject_unauth_pipelining, permit
+
+# Error handling
+smtpd_error_sleep_time = 10s
+smtpd_soft_error_limit = 3
+smtpd_hard_error_limit = ${stress?1}${stress:5}
+
+###############
+# Advanced Settings
+###############
+parent_domain_matches_subdomains = debug_peer_list,fast_flush_domains,mynetworks,qmqpd_authorized_clients
+
+# DO NOT EDIT ANYTHING BELOW #
+# User Overrides

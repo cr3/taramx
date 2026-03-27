@@ -1,0 +1,18 @@
+name: taramx
+services:
+  certbot:
+    volumes:
+      - ./certbot/generate-cert.sh:/generate-cert.sh:ro
+      - ./certbot/dhparams.pem:/etc/letsencrypt/dhparams.pem:ro
+    environment:
+      - IPV4_NETWORK=${IPV4_NETWORK:-172.22.2}
+    command: >
+      sh -c "trap exit TERM; /generate-cert.sh; /deploy-hook.sh; echo Ready; sleep infinity"
+
+  unbound:
+    healthcheck:
+      test: ["CMD-SHELL", "exit 0"]
+      start_period: 0s
+      interval: 1s
+      timeout: 1s
+      retries: 1
