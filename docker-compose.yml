@@ -2,7 +2,7 @@ name: taramx
 
 services:
   certbot:
-    image: certbot/certbot:v5.4.0
+    image: certbot/certbot:v5.5.0
     depends_on:
       unbound:
         condition: service_healthy
